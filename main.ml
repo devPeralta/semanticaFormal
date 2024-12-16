@@ -3,6 +3,7 @@ type tipo =
   | TyInt 
   | TyBool
   | TyFn of tipo * tipo
+  | TyList of tipo (*Tipo lista*)
 
 type bop = Sum | Sub | Mul | Div 
          | Eq | Neq | Leq | Lt | Geq | Gt 
@@ -18,6 +19,9 @@ type expr =
   | App of expr * expr
   | Let of string * tipo * expr * expr
   | LetRec of string * tipo * expr * expr 
+  | Nil (* expr list*)
+  | Head of expr (* expr list*)
+  | Tail of expr (* expr list*)
 
 
 type tyenv = (string * tipo) list 
@@ -47,6 +51,12 @@ let rec typeinfer (g:tyenv) (e:expr) : tipo =
   | LetRec(f, TyFn(t,t'), Fn(x,t'',e1), e2) -> failwith "não implementado"
   
   | LetRec _ -> failwith "não implementado"
+
+  | Nil -> "[]" (* expr list*)
+
+  | Head e1 -> "hd " ^ (expr_str e1) (* expr list*)
+  
+  | Tail e1 -> "tl " ^ (expr_str e1) (* expr list*)
   
 
 (* ===========  avaliação ===============*)
