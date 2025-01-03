@@ -1,218 +1,106 @@
-
+(* Types *)
 type tipo = 
-  | TyInt 
+  | TyInt
   | TyBool
-  | TyFn of tipo * tipo
-  | TyList of tipo (*Tipo lista*)
-
-type bop = Sum | Sub | Mul | Div 
-         | Eq | Neq | Leq | Lt | Geq | Gt 
-         | And | Or
+  | TyFun of tipo * tipo
+  | TyVar of int
 
 type expr = 
   | Num of int
-  | Bool of bool 
-  | If of expr * expr * expr 
-  | Bop of bop * expr * expr
-  | Id of string
-  | Fn of  string * tipo * expr 
-  | App of expr * expr
-  | Let of string * tipo * expr * expr
-  | LetRec of string * tipo * expr * expr 
-  | Nil (* expr list*)
-  | Head of expr (* expr list*)
-  | Tail of expr (* expr list*)
+  | Bool of bool
+  | Var of string
+  | App of expr * expr  (* aplicação de função *)
+  | Fun of string * expr  (* função anônima *)
 
+type type_env = (string * tipo) list
+type equacoes = (tipo * tipo) list
 
-type tyenv = (string * tipo) list 
+(* Gera variáveis de tipo frescas *)
+let prox_var = ref 0
+let novo_tipo () = 
+  let v = !prox_var in
+  prox_var := v + 1;
+  TyVar v
 
-exception TypeError of string 
-
-exception BugParser
-  
-let rec typeinfer (g:tyenv) (e:expr) : tipo = 
-  match e with
-  | Num n -> failwith "não implementado"
-      
-  | Bool b -> failwith "não implementado"
-
-  | If(e1,e2,e3) -> failwith "não implementado"
-  
-  | Bop(op, e1,e2) -> failwith "não implementado"
-      
-  | Id x  -> failwith "não implementado"
-      
-  | Fn(x,t,e1) -> failwith "não implementado"
-  
-  | App(e1,e2) -> failwith "não implementado"
-      
-  | Let(x,t,e1,e2) -> failwith "não implementado"
-      
-  | LetRec(f, TyFn(t,t'), Fn(x,t'',e1), e2) -> failwith "não implementado"
-  
-  | LetRec _ -> failwith "não implementado"
-
-  | Nil -> "[]" (* expr list*)
-
-  | Head e1 -> "hd " ^ (expr_str e1) (* expr list*)
-  
-  | Tail e1 -> "tl " ^ (expr_str e1) (* expr list*)
-  
-
-(* ===========  avaliação ===============*)
-
-let rec isvalue (e:expr) : bool = 
-  match e with
-  | Num _ | Bool _ | Fn _ -> true 
-  | _  -> false 
-
-exception NoRuleApplies
-
-exception BugTypeInfer
-
-let rec subs v x e = 
-  match e with
-  | Num _ | Bool _ -> failwith "não implementado"
-
-  | If(e1,e2,e3) -> failwith "não implementado"
-
-  | Bop(op,e1,e2) -> failwith "não implementado"
-
-  | Id y -> failwith "não implementado"  
-
-  | Fn(y,t,e1) when x = y -> failwith "não implementado"
-  | Fn(y,t,e1)            -> failwith "não implementado"
-  
-  | App(e1,e2) -> failwith "não implementado"
-
-  | Let(y,t,e1,e2) when x = y ->  failwith "não implementado" 
-  | Let(y,t,e1,e2)            ->  failwith "não implementado" 
-  
-  | LetRec(f, tf, Fn(y,t'',e1), e2) when x = f -> failwith "não implementado"
-  | LetRec(f, tf, Fn(y,t'',e1), e2)            -> failwith "não implementado"  
-      
-  | LetRec _ -> raise BugParser
-
-   
-
-   
-
-let compute (op,v1,v2) = 
-  match (v1,v2) with
-  | (Num n1, Num n2) ->
-      (match op with
-       | Sum -> Num (n1 + n2)
-       | Sub -> Num (n1 - n2)
-       | Mul -> Num (n1 * n2)
-       | Div -> Num (n1 / n2)
-       | Eq  -> Bool (n1 = n2)
-       | Neq -> Bool (n1 != n2)
-       | Leq -> Bool (n1 <= n2)
-       | Lt -> Bool (n1 < n2)
-       | Geq -> Bool (n1 >= n2)
-       | Gt -> Bool (n1 > n2)
-       | _ -> raise BugTypeInfer)
-      
-  | (Bool b1, Bool b2) ->
-      (match op with 
-       | And -> Bool (b1 && b2)
-       | Or -> Bool (b1 || b2)
-       | _ -> raise BugTypeInfer)
-      
-  | _ -> raise BugTypeInfer
-
-let rec step (e:expr) : expr = 
-  match e with 
-  | Num _ | Bool _ | Fn _ | Id _ -> failwith "não implementado" 
-
-  | Bop (op,v1,v2) when isvalue v1 && isvalue v2 -> failwith "não implementado"
-  | Bop (op,v1,e2) when isvalue v1 ->  failwith "não implementado"
-  | Bop (op,e1,e2)                 ->  failwith "não implementado"
-
-  | If(Bool true,e2,e3)  -> failwith "não implementado"
-  | If(Bool false,e2,e3) -> failwith "não implementado"
-  | If(e1,e2,e3)         -> failwith "não implementado"
-
-  | App(Fn(x,t,e1), v) when isvalue v  -> failwith "não implementado"
-  | App(v1,e2)         when isvalue v1 -> failwith "não implementado"
-  | App(e1,e2)                         -> failwith "não implementado"
-
-  | Let(x,t,v,e2)  when isvalue v -> failwith "não implementado"
-  | Let(x,t,e1,e2)                -> failwith "não implementado"
-
-  | LetRec(f, TyFn(t,t'), Fn(x,t'',e1), e2) -> failwith "não implementado"
-
-  | LetRec _ -> failwith "não implementado"
-   
-
-
-let rec eval (e:expr) : expr = 
-  try 
-    let e' = step e in eval e' 
-  with 
-    NoRuleApplies -> e
-
-
-(* ====== interpretador =======*)
-
-let rec strofexpr(v:expr) : string  = 
-  match v with 
-  | Num n -> string_of_int n
-  | Bool b -> string_of_bool b
-  | Fn _ -> "fun"
-  | _ -> failwith "não implementado ainda"
-
-let rec stroftipo(t:tipo) : string = 
-  match t with 
+(* Imprime tipos de forma legível *)
+let rec string_of_tipo = function
   | TyInt -> "int"
   | TyBool -> "bool"
-  | TyFn(t1,t2) ->  (stroftipo t1) ^ " -> " ^(stroftipo t2)
+  | TyFun (t1, t2) -> "(" ^ string_of_tipo t1 ^ " -> " ^ string_of_tipo t2 ^ ")"
+  | TyVar n -> "t" ^ string_of_int n
 
-(* let parse (s : string) : expr =
-      let lexbuf = Lexing.from_string s in
-      let ast = Parser.prog Lexer.read lexbuf in
-      ast 
-*)
+(* Coleta equações de tipo *)
+let rec collect (env: type_env) (e: expr) : tipo * equacoes =
+  match e with
+  | Num _ -> (TyInt, [])
+  | Bool _ -> (TyBool, [])
+  | Var x ->
+      (match List.assoc_opt x env with
+       | Some t -> (t, [])
+       | None -> failwith ("Variável não encontrada: " ^ x))
+  | Fun (x, e1) ->
+      let param_tipo = novo_tipo () in
+      let (t1, eqs1) = collect ((x, param_tipo) :: env) e1 in
+      (TyFun (param_tipo, t1), eqs1)
+  | App (e1, e2) ->
+      let (t1, eqs1) = collect env e1 in
+      let (t2, eqs2) = collect env e2 in
+      let ret_tipo = novo_tipo () in
+      (ret_tipo, (t1, TyFun (t2, ret_tipo)) :: (eqs1 @ eqs2))
 
-let inter (e:expr) : unit = 
-      (*let e : expr = parse s in *)
-  let t : tipo = typeinfer [] e in
-  let v : expr = eval e in 
-  print_string ((strofexpr v) ^ ":" ^  (stroftipo t) ^ "\n" )
+(* Testa se variável ocorre em tipo *)
+let rec occurs (v: int) (t: tipo) : bool =
+  match t with
+  | TyInt | TyBool -> false
+  | TyFun (t1, t2) -> occurs v t1 || occurs v t2
+  | TyVar n -> v = n
 
+(* Unificação *)
+let rec unify (eqs: equacoes) : (int * tipo) list =
+  match eqs with
+  | [] -> []
+  | (t1, t2) :: rest when t1 = t2 -> unify rest
+  | (TyVar n, t) :: rest | (t, TyVar n) :: rest ->
+      if occurs n t then
+        failwith "Ocorre check falhou"
+      else
+        let subst = [(n, t)] in
+        let rest' = List.map (fun (t1, t2) -> 
+          (subst_tipo subst t1, subst_tipo subst t2)) rest in
+        (n, t) :: unify rest'
+  | (TyFun (t1, t2), TyFun (t3, t4)) :: rest ->
+      unify ((t1, t3) :: (t2, t4) :: rest)
+  | _ -> failwith "Tipos não unificáveis"
 
+(* Aplica substituição em tipo *)
+and subst_tipo (s: (int * tipo) list) (t: tipo) : tipo =
+  match t with
+  | TyInt -> TyInt
+  | TyBool -> TyBool
+  | TyFun (t1, t2) -> TyFun (subst_tipo s t1, subst_tipo s t2)
+  | TyVar n ->
+      match List.assoc_opt n s with
+      | Some t' -> t'
+      | None -> TyVar n
 
-
-                (*  ===== ASTs para teste  =====*)
-(* 
-let dobro : int --> int = fn x:int => 2 * x
-in  dobro 10  
-*)
-
-let tst1 = Let("dobro", TyFn(TyInt,TyInt), Fn("x", TyInt, Bop(Mul, Id "x", Num 2)),
-               App(Id "dobro", Num 10))
-    
-    
-(* 
-   let rec fat : int -> int = fn (x:int) => if x = 0 then 1 else x * (fat (x - 1)) 
-in fat 5 
-*) 
-let tst2  = LetRec("fat", TyFn(TyInt,TyInt), 
-                   Fn("x", TyInt, 
-                      If(Bop(Eq,Id "x",Num 0), 
-                         Num 1, 
-                         Bop(Mul, Id "x", App(Id "fat", Bop(Sub, Id "x", Num 1))))),
-                   App(Id "fat", Num 5)) 
-                                         
-(*
- let rec twice: (int -> int) -> int -> int = 
-            fn f: int -> int => fn x:int => f ( f x))  in 
- twice (fn x:int => x + 1) 10
-*)
-
-let tst3  = Let("twice", TyFn(TyFn(TyInt,TyInt), TyFn(TyInt,TyInt)), 
-                Fn("f", TyFn(TyInt,TyInt), Fn("x", TyInt, App(Id "f", App(Id "f", Id "x")))),
-                App(App(Id "twice", Fn("x", TyInt, Bop(Sum, Id "x", Num 1))), Num 10))
-
-
-                                                                           
+(* Função principal de inferência *)
+let infer (e: expr) : tipo =
+  prox_var := 0;  (* Reset contador de variáveis *)
+  let (t, eqs) = collect [] e in
+  let subst = unify eqs in
+  let final_tipo = subst_tipo subst t in
+  
+  (* Imprime informações do processo *)
+  print_endline "\nEquações coletadas:";
+  List.iter (fun (t1, t2) ->
+    Printf.printf "%s = %s\n" (string_of_tipo t1) (string_of_tipo t2)
+  ) eqs;
+  
+  print_endline "\nSubstituições:";
+  List.iter (fun (n, t) ->
+    Printf.printf "t%d -> %s\n" n (string_of_tipo t)
+  ) subst;
+  
+  print_endline "\nTipo final:";
+  print_endline (string_of_tipo final_tipo);
+  final_tipo
